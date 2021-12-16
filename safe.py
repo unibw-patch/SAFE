@@ -7,6 +7,7 @@ from asm_embedding.FunctionNormalizer import FunctionNormalizer
 from asm_embedding.InstructionsConverter import InstructionsConverter
 from neural_network.SAFEEmbedder import SAFEEmbedder
 from utils import utils
+import datetime
 
 class SAFE:
 
@@ -18,8 +19,10 @@ class SAFE:
         self.embedder.get_tensor()
 
     def embedd_function(self, filename, address):
+        print("INFO: " + str(datetime.datetime.now()) + " Starting R2")
         analyzer = RadareFunctionAnalyzer(filename, use_symbol=False, depth=0)
         functions = analyzer.analyze()
+        print("INFO: " + str(datetime.datetime.now()) + " R2 analysis finished, processin...")
         instructions_list = None
         for function in functions:
             if functions[function]['address'] == address:
@@ -30,6 +33,7 @@ class SAFE:
             return None
         converted_instructions = self.converter.convert_to_ids(instructions_list)
         instructions, length = self.normalizer.normalize_functions([converted_instructions])
+        print("INFO: " + str(datetime.datetime.now()) + " R2 results processing finished")
         embedding = self.embedder.embedd(instructions, length)
         return embedding
 

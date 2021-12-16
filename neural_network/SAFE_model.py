@@ -1,8 +1,8 @@
 # SAFE TEAM
 # distributed under license: GPL 3 License http://www.gnu.org/licenses/
 
-from SiameseSAFE import SiameseSelfAttentive
-from PairFactory import PairFactory
+from neural_network.SiameseSAFE import SiameseSelfAttentive
+from neural_network.PairFactory import PairFactory
 import tensorflow as tf
 import random
 import sys, os
@@ -47,10 +47,10 @@ class modelSAFE:
     # returns the network and a tensorflow session in which the network can be used.
     @staticmethod
     def load_model(path):
-        session = tf.Session()
+        session = tf.compat.v1.Session()
         checkpoint_dir = os.path.abspath(os.path.join(path, "checkpoints"))
-        saver = tf.train.import_meta_graph(os.path.join(checkpoint_dir, "model.meta"))
-        tf.global_variables_initializer().run(session=session)
+        saver = tf.compat.v1.train.import_meta_graph(os.path.join(checkpoint_dir, "model.meta"))
+        tf.compat.v1.global_variables_initializer().run(session=session)
         saver.restore(session, os.path.join(checkpoint_dir, "model"))
         network = SiameseSelfAttentive(
             rnn_state_size=1,
@@ -84,49 +84,49 @@ class modelSAFE:
         )
 
     def train(self):
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
         with tf.Graph().as_default() as g:
-            session_conf = tf.ConfigProto(
+            session_conf = tf.compat.v1.ConfigProto(
                 allow_soft_placement=True,
                 log_device_placement=False
             )
-            sess = tf.Session(config=session_conf)
+            sess = tf.compat.v1.Session(config=session_conf)
 
             # Sets the graph-level random seed.
-            tf.set_random_seed(self.seed)
+            tf.compat.v1.set_random_seed(self.seed)
 
             self.create_network()
             self.network.generate_new_safe()
             # --tbrtr
 
             # Initialize all variables
-            sess.run(tf.global_variables_initializer())
+            sess.run(tf.compat.v1.global_variables_initializer())
 
             # TensorBoard
             # Summaries for loss and accuracy
-            loss_summary = tf.summary.scalar("loss", self.network.loss)
+            loss_summary = tf.compat.v1.summary.scalar("loss", self.network.loss)
 
             # Train Summaries
-            train_summary_op = tf.summary.merge([loss_summary])
+            train_summary_op = tf.compat.v1.summary.merge([loss_summary])
             train_summary_dir = os.path.join(self.logdir, "summaries", "train")
-            train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
+            train_summary_writer = tf.compat.v1.summary.FileWriter(train_summary_dir, sess.graph)
 
             # Validation summaries
-            val_summary_op = tf.summary.merge([loss_summary])
+            val_summary_op = tf.compat.v1.summary.merge([loss_summary])
             val_summary_dir = os.path.join(self.logdir, "summaries", "validation")
-            val_summary_writer = tf.summary.FileWriter(val_summary_dir, sess.graph)
+            val_summary_writer = tf.compat.v1.summary.FileWriter(val_summary_dir, sess.graph)
 
             # Test summaries
-            test_summary_op = tf.summary.merge([loss_summary])
+            test_summary_op = tf.compat.v1.summary.merge([loss_summary])
             test_summary_dir = os.path.join(self.logdir, "summaries", "test")
-            test_summary_writer = tf.summary.FileWriter(test_summary_dir, sess.graph)
+            test_summary_writer = tf.compat.v1.summary.FileWriter(test_summary_dir, sess.graph)
 
             # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
             checkpoint_dir = os.path.abspath(os.path.join(self.logdir, "checkpoints"))
             checkpoint_prefix = os.path.join(checkpoint_dir, "model")
             if not os.path.exists(checkpoint_dir):
                 os.makedirs(checkpoint_dir)
-            saver = tf.train.Saver(tf.global_variables(), max_to_keep=self.num_checkpoints)
+            saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(), max_to_keep=self.num_checkpoints)
 
             best_val_auc = 0
             stat_file = open(str(self.logdir) + "/epoch_stats.tsv", "w")

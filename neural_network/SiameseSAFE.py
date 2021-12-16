@@ -61,10 +61,10 @@ class SiameseSelfAttentive:
     def self_attentive_network(self, input_x, lengths):
         # each functions is a list of embeddings id (an id is an index in the embedding matrix)
         # with this we transform it in a list of embeddings vectors.
-        embbedded_functions = tf.nn.embedding_lookup(self.instructions_embeddings_t, input_x)
+        embbedded_functions = tf.nn.embedding_lookup(params=self.instructions_embeddings_t, ids=input_x)
 
         # We create the GRU RNN
-        (output_fw, output_bw), _ = tf.nn.bidirectional_dynamic_rnn(self.cell_fw, self.cell_bw, embbedded_functions,
+        (output_fw, output_bw), _ = tf.compat.v1.nn.bidirectional_dynamic_rnn(self.cell_fw, self.cell_bw, embbedded_functions,
                                                                     sequence_length=lengths, dtype=tf.float32,
                                                                     time_major=False)
 
@@ -72,17 +72,17 @@ class SiameseSelfAttentive:
         H = tf.concat([output_fw, output_bw], axis=2)
 
         # We do a tile to account for training batches
-        ws1_tiled = tf.tile(tf.expand_dims(self.WS1, 0), [tf.shape(H)[0], 1, 1], name="WS1_tiled")
-        ws2_tile = tf.tile(tf.expand_dims(self.WS2, 0), [tf.shape(H)[0], 1, 1], name="WS2_tiled")
+        ws1_tiled = tf.tile(tf.expand_dims(self.WS1, 0), [tf.shape(input=H)[0], 1, 1], name="WS1_tiled")
+        ws2_tile = tf.tile(tf.expand_dims(self.WS2, 0), [tf.shape(input=H)[0], 1, 1], name="WS2_tiled")
 
         # we compute the matrix A
-        self.A = tf.nn.softmax(tf.matmul(ws2_tile, tf.nn.tanh(tf.matmul(ws1_tiled, tf.transpose(H, perm=[0, 2, 1])))),
+        self.A = tf.nn.softmax(tf.matmul(ws2_tile, tf.nn.tanh(tf.matmul(ws1_tiled, tf.transpose(a=H, perm=[0, 2, 1])))),
                                name="Attention_Matrix")
         # embedding matrix M
         M = tf.identity(tf.matmul(self.A, H), name="Attention_Embedding")
 
         # we create the flattened version of M
-        flattened_M = tf.reshape(M, [tf.shape(M)[0], self.attention_hops * self.rnn_state_size * 2])
+        flattened_M = tf.reshape(M, [tf.shape(input=M)[0], self.attention_hops * self.rnn_state_size * 2])
 
         return flattened_M
 
@@ -91,16 +91,16 @@ class SiameseSelfAttentive:
                                                      trainable=self.trainable_embeddings,
                                                      name="instructions_embeddings", dtype=tf.float32)
 
-        self.x_1 = tf.placeholder(tf.int32, [None, self.max_instructions],
+        self.x_1 = tf.compat.v1.placeholder(tf.int32, [None, self.max_instructions],
                                   name="x_1")  # List of instructions for Function 1
-        self.lengths_1 = tf.placeholder(tf.int32, [None], name='lengths_1')  # List of lengths for Function 1
+        self.lengths_1 = tf.compat.v1.placeholder(tf.int32, [None], name='lengths_1')  # List of lengths for Function 1
         # example  x_1=[[mov,add,padding,padding],[mov,mov,mov,padding]]
         # lenghts_1=[2,3]
 
-        self.x_2 = tf.placeholder(tf.int32, [None, self.max_instructions],
+        self.x_2 = tf.compat.v1.placeholder(tf.int32, [None, self.max_instructions],
                                   name="x_2")  # List of instructions for Function 2
-        self.lengths_2 = tf.placeholder(tf.int32, [None], name='lengths_2')  # List of lengths for Function 2
-        self.y = tf.placeholder(tf.float32, [None], name='y_')  # Real label of the pairs, +1 similar, -1 dissimilar.
+        self.lengths_2 = tf.compat.v1.placeholder(tf.int32, [None], name='lengths_2')  # List of lengths for Function 2
+        self.y = tf.compat.v1.placeholder(tf.float32, [None], name='y_')  # Real label of the pairs, +1 similar, -1 dissimilar.
 
         # Euclidean norms; p = 2
         self.norms = []
@@ -108,47 +108,47 @@ class SiameseSelfAttentive:
         # Keeping track of l2 regularization loss (optional)
         l2_loss = tf.constant(0.0)
 
-        with tf.name_scope('parameters_Attention'):
-            self.WS1 = tf.Variable(tf.truncated_normal([self.attention_depth, 2 * self.rnn_state_size], stddev=0.1),
+        with tf.compat.v1.name_scope('parameters_Attention'):
+            self.WS1 = tf.Variable(tf.random.truncated_normal([self.attention_depth, 2 * self.rnn_state_size], stddev=0.1),
                                    name="WS1")
-            self.WS2 = tf.Variable(tf.truncated_normal([self.attention_hops, self.attention_depth], stddev=0.1),
+            self.WS2 = tf.Variable(tf.random.truncated_normal([self.attention_hops, self.attention_depth], stddev=0.1),
                                    name="WS2")
 
-            rnn_layers_fw = [tf.nn.rnn_cell.GRUCell(size) for size in ([self.rnn_state_size] * self.rnn_depth)]
-            rnn_layers_bw = [tf.nn.rnn_cell.GRUCell(size) for size in ([self.rnn_state_size] * self.rnn_depth)]
+            rnn_layers_fw = [tf.compat.v1.nn.rnn_cell.GRUCell(size) for size in ([self.rnn_state_size] * self.rnn_depth)]
+            rnn_layers_bw = [tf.compat.v1.nn.rnn_cell.GRUCell(size) for size in ([self.rnn_state_size] * self.rnn_depth)]
 
-            self.cell_fw = tf.nn.rnn_cell.MultiRNNCell(rnn_layers_fw)
-            self.cell_bw = tf.nn.rnn_cell.MultiRNNCell(rnn_layers_bw)
+            self.cell_fw = tf.compat.v1.nn.rnn_cell.MultiRNNCell(rnn_layers_fw)
+            self.cell_bw = tf.compat.v1.nn.rnn_cell.MultiRNNCell(rnn_layers_bw)
 
-        with tf.name_scope('Self-Attentive1'):
+        with tf.compat.v1.name_scope('Self-Attentive1'):
             self.function_1 = self.self_attentive_network(self.x_1, self.lengths_1)
-        with tf.name_scope('Self-Attentive2'):
+        with tf.compat.v1.name_scope('Self-Attentive2'):
             self.function_2 = self.self_attentive_network(self.x_2, self.lengths_2)
 
-        self.dense_1 = tf.nn.relu(tf.layers.dense(self.function_1, self.dense_layer_size))
-        self.dense_2 = tf.nn.relu(tf.layers.dense(self.function_2, self.dense_layer_size))
+        self.dense_1 = tf.nn.relu(tf.compat.v1.layers.dense(self.function_1, self.dense_layer_size))
+        self.dense_2 = tf.nn.relu(tf.compat.v1.layers.dense(self.function_2, self.dense_layer_size))
 
-        with tf.name_scope('Embedding1'):
-            self.function_embedding_1 = tf.layers.dense(self.dense_1, self.embedding_size)
-        with tf.name_scope('Embedding2'):
-            self.function_embedding_2 = tf.layers.dense(self.dense_2, self.embedding_size)
+        with tf.compat.v1.name_scope('Embedding1'):
+            self.function_embedding_1 = tf.compat.v1.layers.dense(self.dense_1, self.embedding_size)
+        with tf.compat.v1.name_scope('Embedding2'):
+            self.function_embedding_2 = tf.compat.v1.layers.dense(self.dense_2, self.embedding_size)
 
-        with tf.name_scope('siamese_layer'):
-            self.cos_similarity = tf.reduce_sum(tf.multiply(self.function_embedding_1, self.function_embedding_2),
+        with tf.compat.v1.name_scope('siamese_layer'):
+            self.cos_similarity = tf.reduce_sum(input_tensor=tf.multiply(self.function_embedding_1, self.function_embedding_2),
                                                 axis=1,
                                                 name="cosSimilarity")
 
             # CalculateMean cross-entropy loss
-        with tf.name_scope("Loss"):
-            A_square = tf.matmul(self.A, tf.transpose(self.A, perm=[0, 2, 1]))
+        with tf.compat.v1.name_scope("Loss"):
+            A_square = tf.matmul(self.A, tf.transpose(a=self.A, perm=[0, 2, 1]))
 
-            I = tf.eye(tf.shape(A_square)[1])
-            I_tiled = tf.tile(tf.expand_dims(I, 0), [tf.shape(A_square)[0], 1, 1], name="I_tiled")
-            self.A_pen = tf.norm(A_square - I_tiled)
+            I = tf.eye(tf.shape(input=A_square)[1])
+            I_tiled = tf.tile(tf.expand_dims(I, 0), [tf.shape(input=A_square)[0], 1, 1], name="I_tiled")
+            self.A_pen = tf.norm(tensor=A_square - I_tiled)
 
-            self.loss = tf.reduce_sum(tf.squared_difference(self.cos_similarity, self.y), name="loss")
+            self.loss = tf.reduce_sum(input_tensor=tf.math.squared_difference(self.cos_similarity, self.y), name="loss")
             self.regularized_loss = self.loss + self.l2_reg_lambda * l2_loss + self.A_pen
 
             # Train step
-        with tf.name_scope("Train_Step"):
-            self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(self.regularized_loss)
+        with tf.compat.v1.name_scope("Train_Step"):
+            self.train_step = tf.compat.v1.train.AdamOptimizer(self.learning_rate).minimize(self.regularized_loss)

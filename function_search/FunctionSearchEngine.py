@@ -28,19 +28,19 @@ class TopK:
 
     def loads_embeddings_SE(self, lista_embeddings):
         with self.graph.as_default():
-            tf.set_random_seed(1234)
+            tf.compat.v1.set_random_seed(1234)
             dim = lista_embeddings[0].shape[0]
             ll = np.asarray(lista_embeddings)
             self.matrix = tf.constant(ll, name='matrix_embeddings', dtype=tf.float32)
-            self.target = tf.placeholder("float", [None, dim], name='target_embedding')
+            self.target = tf.compat.v1.placeholder("float", [None, dim], name='target_embedding')
             self.sim = tf.matmul(self.target, self.matrix, transpose_b=True, name="embeddings_similarities")
-            self.k = tf.placeholder(tf.int32, shape=(), name='k')
+            self.k = tf.compat.v1.placeholder(tf.int32, shape=(), name='k')
             self.top_k = tf.nn.top_k(self.sim, self.k, sorted=True)
-            self.session = tf.Session()
+            self.session = tf.compat.v1.Session()
 
     def topK(self, k, target):
         with self.graph.as_default():
-            tf.set_random_seed(1234)
+            tf.compat.v1.set_random_seed(1234)
             return self.session.run(self.top_k, {self.target: target, self.k: int(k)})
 
 class FunctionSearchEngine:
