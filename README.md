@@ -1,3 +1,7 @@
+# Fork of SAFE
+
+This repo is a fork of [SAFE](https://github.com/gadiluna/SAFE) and ports it to Tensorflow 2. For now, most changes result from running `tf_upgrade_v2` and renaming some tensors to make the compatible to TF2 naming.
+
 # SAFE : Self Attentive Function Embedding
 
 Paper
