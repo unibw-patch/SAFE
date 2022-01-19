@@ -1,12 +1,12 @@
 # SAFE TEAM
 # distributed under license: GPL 3 License http://www.gnu.org/licenses/
 
-from asm_embedding.FunctionAnalyzerRadare import RadareFunctionAnalyzer
+from SAFE.asm_embedding.FunctionAnalyzerRadare import RadareFunctionAnalyzer
 from argparse import ArgumentParser
-from asm_embedding.FunctionNormalizer import FunctionNormalizer
-from asm_embedding.InstructionsConverter import InstructionsConverter
-from neural_network.SAFEEmbedder import SAFEEmbedder
-from utils import utils
+from SAFE.asm_embedding.FunctionNormalizer import FunctionNormalizer
+from SAFE.asm_embedding.InstructionsConverter import InstructionsConverter
+from SAFE.neural_network.SAFEEmbedder import SAFEEmbedder
+from SAFE.utils import utils
 import datetime
 
 class SAFE:
