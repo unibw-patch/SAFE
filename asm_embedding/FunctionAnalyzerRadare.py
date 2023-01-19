@@ -191,7 +191,7 @@ class RadareFunctionAnalyzer:
         self.r2.quit()
 
     def __del__(self):
-            self.r2.quit()
+        self.r2.quit()
 
 
 
